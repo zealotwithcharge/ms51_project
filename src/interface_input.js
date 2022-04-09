@@ -5,7 +5,7 @@ export default class InterfaceInputHandler {
     this.int_obj = int_obj;
     switch (this.obj_id) {
       case "start_game":
-        this.prepare_dummy1();
+        this.prepare_dummy1_text();
         this.dummy1.addEventListener("click", function () {
           level.next_level();
         });
@@ -22,6 +22,12 @@ export default class InterfaceInputHandler {
           level.start_with_layout(false);
         });
         break;
+      case "dead":
+        this.prepare_dummy1_text();
+        this.dummy1.addEventListener("click", function () {
+          level.game.restart();
+        });
+        break;
       default:
         break;
     }
@@ -34,12 +40,31 @@ export default class InterfaceInputHandler {
     this.dummy1.style.top = this.int_obj.y + "px";
     this.dummy1.style.left = this.int_obj.x + "px";
   }
+
   prepare_dummy2() {
     this.dummy2 = document.getElementById("dummy2");
     this.dummy2.style.width = this.int_obj.width + "px";
     this.dummy2.style.height = this.int_obj.height + "px";
     this.dummy2.style.position = "absolute";
     this.dummy2.style.top = this.int_obj.y + "px";
+    this.dummy2.style.left = this.int_obj.x + "px";
+  }
+
+  prepare_dummy1_text() {
+    this.dummy1 = document.getElementById("dummy1");
+    this.dummy1.style.width = this.int_obj.width + "px";
+    this.dummy1.style.height = this.int_obj.height + "px";
+    this.dummy1.style.position = "absolute";
+    this.dummy1.style.top = this.int_obj.y - 100 + "px";
+    this.dummy1.style.left = this.int_obj.x + "px";
+  }
+
+  prepare_dummy2_text() {
+    this.dummy2 = document.getElementById("dummy2");
+    this.dummy2.style.width = this.int_obj.width + "px";
+    this.dummy2.style.height = this.int_obj.height + "px";
+    this.dummy2.style.position = "absolute";
+    this.dummy2.style.top = this.int_obj.y - 100 + "px";
     this.dummy2.style.left = this.int_obj.x + "px";
   }
 }

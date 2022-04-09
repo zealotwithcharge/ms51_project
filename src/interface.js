@@ -14,9 +14,9 @@ export default class Interface {
         this.width = this.inter_obj.innerText.length * 53;
       }
 
-      this.height = 100;
-      this.x = x - this.width / 2;
-      this.y = y - this.height / 2;
+      this.height = 150;
+      this.x = x;
+      this.y = y;
     } else if (this.type === "image") {
       this.width = this.inter_obj.naturalWidth;
       this.height = this.inter_obj.naturalHeight;

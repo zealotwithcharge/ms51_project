@@ -6,6 +6,7 @@ export default class Player {
       this.size_factor = 1;
     }
     this.level_arr = level_arr;
+    this.dead = false;
     this.killers = "";
     this.obs = "";
     for (let i = 0; i < level_arr.length; i++) {
@@ -28,6 +29,7 @@ export default class Player {
         }
       }
     }
+    this.rot = 0;
     this.game = game;
     this.jump_count = 0;
     this.x_input_start = false;
@@ -70,12 +72,18 @@ export default class Player {
     this.q_tail = document.getElementById("q-tail");
     this.left = document.getElementById("left");
     this.shared_body = document.getElementById("shared_body");
+    this.roll = document.getElementById("roll");
     this.col_flag = false;
     this.rights = [this.d_right, this.q_right];
     this.mouths = [this.d_mouth, this.q_mouth];
     this.tails = [this.d_tail, this.q_tail];
     this.y_col = null;
     this.x_col = null;
+    this.rolling = false;
+    this.body = {
+      width: this.shared_body.width,
+      height: this.shared_body.height
+    };
     this.it_num_x = Math.ceil(
       (this.shared_body.height * this.size_factor) / 30
     );
@@ -90,6 +98,23 @@ export default class Player {
     for (let i = 0; i < this.it_num_y + 1; i++) {
       this.shifter_y.push(i * this.div_y);
     }
+    this.roll_it_num_x = Math.ceil(
+      (this.roll.height * this.size_factor * 1.5) / 30
+    );
+    this.roll_it_num_y = Math.ceil(
+      (this.roll.width * this.size_factor * 1.5) / 30
+    );
+    this.roll_div_x =
+      (this.roll.height * this.size_factor) / this.roll_it_num_x;
+    this.roll_div_y = (this.roll.width * this.size_factor) / this.roll_it_num_y;
+    this.roll_shifter_x = [];
+    this.roll_shifter_y = [];
+    for (let i = 0; i < this.roll_it_num_x + 1; i++) {
+      this.roll_shifter_x.push(i * this.roll_div_x);
+    }
+    for (let i = 0; i < this.roll_it_num_y + 1; i++) {
+      this.roll_shifter_y.push(i * this.roll_div_y);
+    }
     this.position = {
       x: xx,
       y: yy
@@ -101,7 +126,21 @@ export default class Player {
   }
 
   update(dt) {
-    if (dt !== 0.0) {
+    if (dt !== 0.0 && !this.dead) {
+      var update_shifter_x = this.shifter_x;
+      var update_shifter_y = this.shifter_y;
+      if (this.rolling) {
+        this.body.width = this.roll.width;
+        this.body.height = this.roll.height;
+        update_shifter_x = this.roll_shifter_x;
+        update_shifter_y = this.roll_shifter_y;
+      } else {
+        this.rot = 0;
+        this.body.width = this.shared_body.width;
+        this.body.height = this.shared_body.height;
+        update_shifter_x = this.shifter_x;
+        update_shifter_y = this.shifter_y;
+      }
       this.y_acc = this.body_y_acc + this.gravity;
       let temp_x_vel = this.x_vel + this.x_acc / dt;
       let temp_y_vel = this.y_vel + this.y_acc / dt;
@@ -119,22 +158,24 @@ export default class Player {
       var x_col_points = 0.0;
       var y_col_points = 0.0;
 
-      for (let i = 0; i < this.shifter_x.length; i++) {
+      for (let i = 0; i < update_shifter_x.length; i++) {
         let checkpoint_left = [
           Math.floor(temp_x / 48) + 1,
-          Math.floor((temp_y - 24 + this.shifter_x[i]) / 48)
+          Math.floor((temp_y - 24 + update_shifter_x[i]) / 48)
         ];
         let checkpoint_right = [
-          Math.floor(
-            (temp_x + this.shared_body.width * this.size_factor) / 48
-          ) + 1,
-          Math.floor((temp_y - 24 + this.shifter_x[i]) / 48)
+          Math.floor((temp_x + this.body.width * this.size_factor) / 48) + 1,
+          Math.floor((temp_y - 24 + update_shifter_x[i]) / 48)
         ];
         if (
           checkpoint_left[0] < 0 ||
           checkpoint_left[1] < 0 ||
           checkpoint_right[0] < 0 ||
-          checkpoint_right[1] < 0
+          checkpoint_right[1] < 0 ||
+          checkpoint_left[0] > this.level_arr[0].length ||
+          checkpoint_left[1] > this.level_arr.length ||
+          checkpoint_right[0] > this.level_arr[0].length ||
+          checkpoint_right[1] > this.level_arr.length
         ) {
           continue;
         }
@@ -148,34 +189,40 @@ export default class Player {
         if (arr_val_left !== 0 || arr_val_right !== 0) {
           if (arr_val_left === 1 || arr_val_right === 1) {
             x_col_points++;
-            if (i !== 0 && i !== this.shifter_x.length - 1) {
+            if (i !== 0 && i !== update_shifter_x.length - 1) {
               x_col_points += 1.5;
             }
           }
           if (arr_val_left === 2 || arr_val_right === 2) {
+            if (!this.dead) {
+              this.level.died();
+              this.dead = true;
+            }
           }
         }
       }
       if (x_col_points > 2) {
         x_col = true;
       }
-      for (let i = 0; i < this.shifter_y.length; i++) {
+      for (let i = 0; i < update_shifter_y.length; i++) {
         let checkpoint_up = [
-          Math.floor((temp_x + this.shifter_y[i]) / 48) + 1,
+          Math.floor((temp_x + update_shifter_y[i]) / 48) + 1,
           Math.floor((temp_y - 24) / 48)
         ];
 
         let checkpoint_down = [
-          Math.floor((temp_x + this.shifter_y[i]) / 48) + 1,
-          Math.floor(
-            (temp_y - 24 + this.shared_body.height * this.size_factor) / 48
-          )
+          Math.floor((temp_x + update_shifter_y[i]) / 48) + 1,
+          Math.floor((temp_y - 24 + this.body.height * this.size_factor) / 48)
         ];
         if (
           checkpoint_down[0] < 0 ||
           checkpoint_down[1] < 0 ||
           checkpoint_up[0] < 0 ||
-          checkpoint_up[1] < 0
+          checkpoint_up[1] < 0 ||
+          checkpoint_down[0] > this.level_arr[0].length ||
+          checkpoint_down[1] > this.level_arr.length ||
+          checkpoint_up[0] > this.level_arr[0].length ||
+          checkpoint_up[1] > this.level_arr.length
         ) {
           continue;
         }
@@ -188,25 +235,33 @@ export default class Player {
           if (arr_val_up === 1) {
             y_col_below = false;
             y_col_points++;
-            if (i !== 0 && i !== this.shifter_y.length - 1) {
+            if (i !== 0 && i !== update_shifter_y.length - 1) {
               y_col_points += 1.5;
             }
           } else if (arr_val_down === 1) {
             y_col_below = true;
             y_col_points++;
-            if (i !== 0 && i !== this.shifter_y.length - 1) {
+            if (i !== 0 && i !== update_shifter_y.length - 1) {
               y_col_points += 1.5;
             }
           }
           if (arr_val_up === 2 || arr_val_down === 2) {
+            if (!this.dead) {
+              this.level.died();
+              this.dead = true;
+            }
           }
+        }
+        if (this.rolling) {
+          this.col_log(
+            temp_x,
+            temp_y,
+            "y_col_points: " + y_col_points + "; rolling: " + this.rolling
+          );
         }
       }
       if (y_col_points > 2) {
         y_col = true;
-        this.jumping = false;
-        this.hasLaunched = false;
-        this.jump_count = 0;
       }
       if (x_col) {
         this.x_vel = 0;
@@ -216,16 +271,26 @@ export default class Player {
         if (y_col_below) {
           this.y_body_acc = -1 * this.gravity;
           this.airborne = false;
+          if (this.rolling) {
+            this.rolling = false;
+            this.position.y =
+              this.position.y -
+              (this.shared_body.height * this.size_factor -
+                this.roll.height * 0.75 * this.size_factor);
+            this.body_position.y =
+              this.position.y +
+              (this.size_factor * this.shared_body.height) / 2;
+          }
         } else {
           this.y_body_acc = 0;
           this.airborne = true;
         }
+        this.jumping = false;
+        this.hasLaunched = false;
+        this.jump_count = 0;
         this.y_vel = 0;
       }
-      if (
-        temp_x >
-        this.gameWidth - (this.size_factor * this.shared_body.width) / 2
-      ) {
+      if (temp_x > this.gameWidth - (this.size_factor * this.body.width) / 2) {
         this.level.handler.remove_listeners();
         this.game.next();
       }
@@ -247,78 +312,110 @@ export default class Player {
   }
 
   draw(ctx) {
-    ctx.drawImage(
-      this.shared_body,
-      0,
-      0,
-      this.shared_body.width,
-      this.shared_body.height,
-      this.position.x,
-      this.position.y,
-      this.shared_body.width * this.size_factor,
-      this.shared_body.height * this.size_factor
-    );
-    ctx.drawImage(
-      this.mouths[this.mouth],
-      0,
-      0,
-      this.mouths[this.mouth].width,
-      this.mouths[this.mouth].height,
-      this.body_position.x - this.pixel_size * 3.5 * this.size_factor,
-      this.body_position.y - this.pixel_size * 11.5 * this.size_factor,
-      this.mouths[this.mouth].width * this.size_factor,
-      this.mouths[this.mouth].height * this.size_factor
-    );
-    ctx.drawImage(
-      this.rights[this.right],
-      0,
-      0,
-      this.rights[this.right].width,
-      this.rights[this.right].height,
-      this.body_position.x + this.pixel_size * 1.5 * this.size_factor,
-      this.body_position.y - this.pixel_size * 4.5 * this.size_factor,
-      this.rights[this.right].width * this.size_factor,
-      this.rights[this.right].height * this.size_factor
-    );
-    ctx.drawImage(
-      this.tails[this.tail],
-      0,
-      0,
-      this.tails[this.tail].width,
-      this.tails[this.tail].height,
-      this.body_position.x - this.pixel_size * 6.5 * this.size_factor,
-      this.body_position.y + this.pixel_size * 6.5 * this.size_factor,
-      this.tails[this.tail].width * this.size_factor,
-      this.tails[this.tail].height * this.size_factor
-    );
-    ctx.drawImage(
-      this.left,
-      0,
-      0,
-      this.left.width,
-      this.left.height,
-      this.body_position.x - this.pixel_size * 9.5 * this.size_factor,
-      this.body_position.y - this.pixel_size * 4.5 * this.size_factor,
-      this.left.width * this.size_factor,
-      this.left.height * this.size_factor
-    );
+    if (!this.rolling) {
+      ctx.drawImage(
+        this.shared_body,
+        0,
+        0,
+        this.shared_body.width,
+        this.shared_body.height,
+        this.position.x,
+        this.position.y,
+        this.shared_body.width * this.size_factor,
+        this.shared_body.height * this.size_factor
+      );
+      ctx.drawImage(
+        this.mouths[this.mouth],
+        0,
+        0,
+        this.mouths[this.mouth].width,
+        this.mouths[this.mouth].height,
+        this.body_position.x - this.pixel_size * 3.5 * this.size_factor,
+        this.body_position.y - this.pixel_size * 11.5 * this.size_factor,
+        this.mouths[this.mouth].width * this.size_factor,
+        this.mouths[this.mouth].height * this.size_factor
+      );
+      ctx.drawImage(
+        this.rights[this.right],
+        0,
+        0,
+        this.rights[this.right].width,
+        this.rights[this.right].height,
+        this.body_position.x + this.pixel_size * 1.5 * this.size_factor,
+        this.body_position.y - this.pixel_size * 4.5 * this.size_factor,
+        this.rights[this.right].width * this.size_factor,
+        this.rights[this.right].height * this.size_factor
+      );
+      ctx.drawImage(
+        this.tails[this.tail],
+        0,
+        0,
+        this.tails[this.tail].width,
+        this.tails[this.tail].height,
+        this.body_position.x - this.pixel_size * 6.5 * this.size_factor,
+        this.body_position.y + this.pixel_size * 6.5 * this.size_factor,
+        this.tails[this.tail].width * this.size_factor,
+        this.tails[this.tail].height * this.size_factor
+      );
+      ctx.drawImage(
+        this.left,
+        0,
+        0,
+        this.left.width,
+        this.left.height,
+        this.body_position.x - this.pixel_size * 9.5 * this.size_factor,
+        this.body_position.y - this.pixel_size * 4.5 * this.size_factor,
+        this.left.width * this.size_factor,
+        this.left.height * this.size_factor
+      );
+    } else {
+      var tempCanvas = document.createElement("canvas");
+      var tempCtx = tempCanvas.getContext("2d");
+
+      tempCanvas.width = this.roll.width * this.size_factor * 1.5;
+      tempCanvas.height = this.roll.height * this.size_factor * 1.5;
+      tempCtx.translate(
+        this.roll.width * this.size_factor * 1.5 * 0.5,
+        this.roll.height * this.size_factor * 1.5 * 0.5
+      );
+      tempCtx.rotate((this.rot * Math.PI) / 180);
+
+      tempCtx.translate(
+        -1 * this.roll.width * this.size_factor * 1.5 * 0.5,
+        -1 * this.roll.height * this.size_factor * 1.5 * 0.5
+      );
+      tempCtx.drawImage(
+        this.roll,
+        0,
+        0,
+        this.roll.width * this.size_factor * 1.5,
+        this.roll.height * this.size_factor * 1.5
+      );
+      tempCtx.rotate(0);
+      this.rot += 10;
+      ctx.drawImage(tempCanvas, this.position.x, this.position.y);
+    }
   }
 
   setRight(right) {
     this.right = right;
   }
+
   setMouth(mouth) {
     this.mouth = mouth;
   }
+
   setTail(tail) {
     this.tail = tail;
   }
+
   moveRight() {
     if (!this.x_input_start) {
       if (this.airborne) {
         this.x_vel = 70;
         this.x_acc = 0;
         this.stopY();
+        this.rolling = true;
       } else {
         this.x_acc = this.size_factor * this.walk_speed;
         this.x_input_start = true;
@@ -331,12 +428,14 @@ export default class Player {
       }
     }
   }
+
   moveLeft() {
     if (!this.x_input_start) {
       if (this.airborne) {
         this.x_vel = -70;
         this.x_acc = 0;
         this.stopY();
+        this.rolling = true;
       } else {
         this.x_acc = this.size_factor * -1 * this.walk_speed;
         this.x_input_start = true;
@@ -349,7 +448,9 @@ export default class Player {
       }
     }
   }
+
   jump() {
+    this.rolling = false;
     if (!this.jumping) {
       this.y_vel = -150 * this.size_factor;
       this.body_y_acc = 0;
@@ -374,6 +475,7 @@ export default class Player {
     }
     this.flag = 0;
   }
+
   async deviance_jump(layout) {
     var triggered = true;
     if (this.level_id === 2) {
@@ -394,6 +496,7 @@ export default class Player {
       }
     }
   }
+
   async deviance_pound(layout) {
     var triggered = true;
     if (this.level_id === 2) {
@@ -414,6 +517,7 @@ export default class Player {
       }
     }
   }
+
   async deviance_right(layout) {
     var triggered = true;
     if (this.level_id === 2) {
@@ -434,20 +538,23 @@ export default class Player {
       }
     }
   }
+
   pound() {
     this.y_vel = 30;
     this.body_y_acc = 0;
   }
+
   stopX() {
     this.x_acc = 0;
     this.x_vel = 0;
     this.x_input_start = false;
   }
+
   stopY() {
     this.body_y_acc = 0;
     this.y_vel = 0;
-    console.log("stopy");
   }
+
   log() {
     console.log("jumping: " + this.jumping);
     console.log("hasLaunched: " + this.hasLaunched);

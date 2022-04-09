@@ -33,13 +33,15 @@ export default class Dialogue {
     return;
   }
   next_dialogue() {
-    this.index++;
-    if (this.index === this.text.length) {
-      document.removeEventListener("keypress", this.dialoguer);
-      this.handler.add_listeners();
-      if (this.level.level_id === 3) {
-        this.level.gameObjects.pop();
-        this.level.setScore(500);
+    if (this.text[0].localeCompare("You Died") !== 0) {
+      this.index++;
+      if (this.index === this.text.length) {
+        document.removeEventListener("keypress", this.dialoguer);
+        this.handler.add_listeners();
+        if (this.level.level_id === 3) {
+          this.level.gameObjects.pop();
+          this.level.setScore(500);
+        }
       }
     }
   }

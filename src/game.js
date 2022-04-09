@@ -10,7 +10,16 @@ export default class Game {
     this.gravity = 10;
     this.current_level = 3;
     this.score = 0;
+    this.allowance = false;
   }
+  toggle_allowance() {
+    if (this.allowance) {
+      this.allowance = false;
+    } else {
+      this.allowance = true;
+    }
+  }
+
   start() {
     this.level = new Levels(this, this.current_level);
     this.level.start();

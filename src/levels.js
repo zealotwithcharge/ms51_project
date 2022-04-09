@@ -5,6 +5,7 @@ import Interface from "./interface";
 import Static from "./statics";
 import Obstacle from "./obstacle";
 import Dialogue from "./dialogues";
+
 export default class Levels {
   constructor(game, level_id) {
     this.gameWidth = game.gameWidth;
@@ -18,7 +19,7 @@ export default class Levels {
     this.obstacles = [];
     this.handler = null;
     this.praised = false;
-    this.allowance = false;
+    this.allowance = game.allowance;
     this.score_text = "Money: $ ";
     this.keywords = {
       race: ["Qwertydian", "Dvorakian"],
@@ -26,6 +27,7 @@ export default class Levels {
       jump: ["W", ","],
       pound: ["S", "O"]
     };
+    this.reset_dummies();
     // prettier-ignore
     this.level_1 =[
 [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
@@ -94,6 +96,7 @@ export default class Levels {
         new InterfaceInputHandler("start_game", this, this.int_start);
         this.gameObjects = [this.int_title, this.int_start];
         break;
+
       case 1:
         this.int_qwerty = new Interface(
           this.gameWidth / 4,
@@ -111,6 +114,7 @@ export default class Levels {
         new InterfaceInputHandler("d_choice", this, this.int_dvorak);
         this.gameObjects = [this.int_qwerty, this.int_dvorak];
         break;
+
       case 2:
         if (this.game.chosen_layout === 1) {
           this.elder = new Static(
@@ -168,6 +172,7 @@ export default class Levels {
         this.gameObjects.push(this.elder);
         this.gameObjects.push(this.dialogue);
         break;
+
       case 3:
         this.create_obstacles(this.level_2);
         this.player = new Player(
@@ -192,76 +197,87 @@ export default class Levels {
         break;
     }
   }
+
   async giveAllowance() {
-    sleep(1000);
-    var gifty = [
-      [
-        "Before you start, here's some money to get you going.",
-        "Your total money at the end of your journey is super important!",
-        "Good luck!"
-      ],
-      [
-        "Wait.",
-        "Here's some money to get you started.",
-        "Your total money at the end will be important."
-      ],
-      [
-        "Wait.",
-        "I was hesitant, but here's some money to get you started.",
-        "It'll be important at the end of your journey."
-      ]
-    ];
-    var index = 0;
-    switch (this.game.deviance) {
-      case 0:
-      case 1:
-      case 2:
-        index = 0;
-        break;
-      case 3:
-        index = 1;
-        break;
-      case 4:
-        index = 2;
-        break;
-      default:
-        break;
+    if (!this.game.allowance) {
+      sleep(1000);
+      var gifty = [
+        [
+          "Before you start, here's some money to get you going.",
+          "Your total money at the end of your journey is super important!",
+          "Good luck!"
+        ],
+        [
+          "Wait.",
+          "Here's some money to get you started.",
+          "Your total money at the end will be important."
+        ],
+        [
+          "Wait.",
+          "I was hesitant, but here's some money to get you started.",
+          "It'll be important at the end of your journey."
+        ]
+      ];
+      var index = 0;
+      switch (this.game.deviance) {
+        case 0:
+        case 1:
+        case 2:
+          index = 0;
+          break;
+        case 3:
+          index = 1;
+          break;
+        case 4:
+          index = 2;
+          break;
+        default:
+          break;
+      }
+      var gift = new Dialogue(
+        this.gameWidth / 5 + 100,
+        this.gameHeight / 10,
+        gifty[index],
+        this,
+        this.handler
+      );
+      var face = new Static(
+        this.gameWidth / 10,
+        this.gameHeight / 5,
+        this.chosen_layout === 1 ? "d_elder_port" : "q_elder_port"
+      );
+      this.game.toggle_allowance();
+      this.gameObjects.push(gift);
+      this.gameObjects.push(face);
     }
-    var gift = new Dialogue(
-      this.gameWidth / 5,
-      this.gameHeight / 10,
-      gifty[index],
-      this,
-      this.handler
-    );
-    var face = new Static(
-      this.gameWidth / 10,
-      this.gameHeight / 5,
-      this.chosen_layout === 1 ? "d_elder_port" : "q_elder_port"
-    );
-    this.gameObjects.push(gift);
-    this.gameObjects.push(face);
   }
+
   getHandler(player) {
     return new InputHandler(player);
   }
+
   removeHandler() {
     this.handler = null;
   }
+
   update(dt) {
     this.gameObjects.forEach((object) => object.update(dt));
   }
+
   draw(ctx) {
     this.gameObjects.forEach((object) => object.draw(ctx));
   }
+
   next_level() {
     this.reset_dummies();
     this.game.next();
   }
+
   start_with_layout(choice) {
     this.game.set_layout(choice);
     this.next_level();
   }
+
   reset_dummies() {
     this.dummy1 = document.getElementById("dummy1");
     this.dummy1.style.width = 0;
@@ -287,17 +303,20 @@ export default class Levels {
     this.dummy3.style.left = 0;
     this.dummy3.replaceWith(this.dummy3.cloneNode(true));
   }
+
   cleanObstacles() {
     for (let i = 0; i < this.obstacles.length; i++) {
       this.obstacles[i][2] = this.obstacles[i][0] + this.obstacles[i][2];
       this.obstacles[i][3] = this.obstacles[i][1] + this.obstacles[i][3];
     }
   }
+
   delete_obj(obj) {
     this.gameObjects = this.gameObjects.filter(function (value, index, arr) {
       return value !== obj;
     });
   }
+
   elder_scold(key) {
     let scolding = [
       [
@@ -405,6 +424,7 @@ export default class Levels {
     }
     return true;
   }
+
   praise() {
     if (!this.praised && this.deviance !== 5) {
       let praising = [
@@ -434,15 +454,39 @@ export default class Levels {
       return true;
     }
   }
+
+  died() {
+    var dead = new Dialogue(
+      this.gameWidth / 2 - 200,
+      this.gameHeight / 2 - 150,
+      ["You Died"],
+      this,
+      this.handler
+    );
+    var dead_button = new Interface(
+      this.gameWidth / 2 - 200,
+      this.gameHeight / 2,
+      null,
+      "text",
+      "Restart"
+    );
+    var grey_screen = new Static(0, 1080, "grey_screen");
+    this.gameObjects.push(grey_screen);
+    this.gameObjects.push(dead);
+    this.gameObjects.push(dead_button);
+    new InterfaceInputHandler("dead", this, dead_button);
+  }
+
   getScore() {
     return new Interface(
-      this.gameWidth - 300,
+      this.gameWidth - 525,
       200,
       undefined,
       "text",
       this.score_text + this.game.score
     );
   }
+
   create_obstacles(arr) {
     for (let i = 0; i < arr.length; i++) {
       for (let j = 1; j < arr[0].length; j++) {
@@ -473,14 +517,17 @@ export default class Levels {
     }
     this.cleanObstacles();
   }
+
   setScore(num) {
     this.game.set_score(num);
     this.score.text = this.score_text + this.game.score;
   }
 }
+
 function create_floor(x, y) {
   return new Obstacle(x, y, "terrain");
 }
+
 function create_spike_block(x, y) {
   return new Obstacle(x, y, "spike_block");
 }
