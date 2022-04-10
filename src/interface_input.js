@@ -28,6 +28,34 @@ export default class InterfaceInputHandler {
           level.game.restart();
         });
         break;
+      case "upgrade":
+        this.prepare_dummy1_text();
+        this.dummy1.addEventListener("click", function () {
+          level.game.toggle_layout();
+          level.setScore(0);
+          level.gameObjects.pop();
+          level.gameObjects.pop();
+          level.gameObjects.pop();
+          level.gameObjects.pop();
+        });
+        break;
+      case "non_upgrade":
+        this.prepare_dummy2_text();
+        this.dummy2.addEventListener("click", function () {
+          level.gameObjects.pop();
+          level.gameObjects.pop();
+          level.gameObjects.pop();
+          level.gameObjects.pop();
+        });
+        break;
+      case "no_upgrade":
+        this.prepare_dummy2_text();
+        this.dummy2.addEventListener("click", function () {
+          level.gameObjects.pop();
+          level.gameObjects.pop();
+          level.gameObjects.pop();
+        });
+        break;
       default:
         break;
     }

@@ -15,6 +15,9 @@ export default class Obstacle {
       case "spike_block":
         ctx.drawImage(this.inter_obj, 0, 0, 54, 52, this.x, this.y, 54, 52);
         break;
+      case "restart":
+        ctx.drawImage(this.inter_obj, 0, 0, 21, 22, this.x, this.y, 48, 48);
+        break;
       default:
         break;
     }

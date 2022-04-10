@@ -9,6 +9,7 @@ export default class Player {
     this.dead = false;
     this.killers = "";
     this.obs = "";
+    this.jumpers = "";
     for (let i = 0; i < level_arr.length; i++) {
       for (let j = 0; j < level_arr[0].length; j++) {
         var temp_set = (function (i_val, j_val) {
@@ -18,6 +19,9 @@ export default class Player {
           } else if (level_arr[i_val][j_val] === 2) {
             var kills = "(" + j_val + "," + i_val + "),";
             return [0, kills];
+          } else if (level_arr[i_val][j_val] === 3) {
+            var jumpers = "(" + j_val + "," + i_val + "),";
+            return [0, 0, jumpers];
           } else if (level_arr[i_val][j_val] === 0) {
             return [0];
           }
@@ -172,10 +176,10 @@ export default class Player {
           checkpoint_left[1] < 0 ||
           checkpoint_right[0] < 0 ||
           checkpoint_right[1] < 0 ||
-          checkpoint_left[0] > this.level_arr[0].length ||
-          checkpoint_left[1] > this.level_arr.length ||
-          checkpoint_right[0] > this.level_arr[0].length ||
-          checkpoint_right[1] > this.level_arr.length
+          checkpoint_left[0] > this.level_arr[0].length - 1 ||
+          checkpoint_left[1] > this.level_arr.length - 1 ||
+          checkpoint_right[0] > this.level_arr[0].length - 1 ||
+          checkpoint_right[1] > this.level_arr.length - 1
         ) {
           continue;
         }
@@ -199,6 +203,14 @@ export default class Player {
               this.dead = true;
             }
           }
+          if (arr_val_left === 3) {
+            this.jump_count = 0;
+            this.level.delete_obs(checkpoint_left[1], checkpoint_left[0], 2);
+          }
+          if (arr_val_right === 3) {
+            this.level.delete_obs(checkpoint_right[1], checkpoint_right[0], 2);
+            this.jump_count = 0;
+          }
         }
       }
       if (x_col_points > 2) {
@@ -219,10 +231,10 @@ export default class Player {
           checkpoint_down[1] < 0 ||
           checkpoint_up[0] < 0 ||
           checkpoint_up[1] < 0 ||
-          checkpoint_down[0] > this.level_arr[0].length ||
-          checkpoint_down[1] > this.level_arr.length ||
-          checkpoint_up[0] > this.level_arr[0].length ||
-          checkpoint_up[1] > this.level_arr.length
+          checkpoint_down[0] > this.level_arr[0].length - 1 ||
+          checkpoint_down[1] > this.level_arr.length - 1 ||
+          checkpoint_up[0] > this.level_arr[0].length - 1 ||
+          checkpoint_up[1] > this.level_arr.length - 1
         ) {
           continue;
         }
@@ -253,11 +265,6 @@ export default class Player {
           }
         }
         if (this.rolling) {
-          this.col_log(
-            temp_x,
-            temp_y,
-            "y_col_points: " + y_col_points + "; rolling: " + this.rolling
-          );
         }
       }
       if (y_col_points > 2) {
@@ -305,6 +312,43 @@ export default class Player {
       }
       if (!x_col && !y_col) {
         this.col_flag = false;
+      }
+      var temp_eq = [0, 0, 0];
+      if (this.level.is_shooting_right()) {
+        temp_eq = this.level.get_right_eq();
+        let slope_left =
+          (this.position.y - temp_eq[1]) / (this.position.x - temp_eq[0]);
+        let slope_right =
+          (this.position.y + this.body.height - temp_eq[1]) /
+          (this.position.x + this.body.width - temp_eq[0]);
+        if (temp_eq[2] >= slope_left && temp_eq[2] <= slope_right) {
+          this.level.died();
+          this.dead = true;
+        }
+      }
+      if (this.level.is_shooting_jump()) {
+        temp_eq = this.level.get_jump_eq();
+        let slope_left =
+          (this.position.y - temp_eq[1]) / (this.position.x - temp_eq[0]);
+        let slope_jump =
+          (this.position.y + this.body.height - temp_eq[1]) /
+          (this.position.x + this.body.width - temp_eq[0]);
+        if (temp_eq[2] >= slope_left && temp_eq[2] <= slope_jump) {
+          this.level.died();
+          this.dead = true;
+        }
+      }
+      if (this.level.is_shooting_pound()) {
+        temp_eq = this.level.get_pound_eq();
+        let slope_left =
+          (this.position.y - temp_eq[1]) / (this.position.x - temp_eq[0]);
+        let slope_pound =
+          (this.position.y + this.body.height - temp_eq[1]) /
+          (this.position.x + this.body.width - temp_eq[0]);
+        if (temp_eq[2] >= slope_left && temp_eq[2] <= slope_pound) {
+          this.level.died();
+          this.dead = true;
+        }
       }
       this.y_col = y_col;
       this.x_col = x_col;
@@ -453,6 +497,9 @@ export default class Player {
     this.rolling = false;
     if (!this.jumping) {
       this.y_vel = -150 * this.size_factor;
+      if (this.size_factor === 1) {
+        this.y_vel = -70;
+      }
       this.body_y_acc = 0;
       this.jumping = true;
       if (this.x_vel !== 0) {
@@ -460,18 +507,19 @@ export default class Player {
       }
 
       this.x_acc = (Math.abs(this.x_acc) / this.x_acc) * 3;
-      this.jump_count++;
       return;
     }
     if (this.jump_count < 2) {
       this.y_vel = -150 * this.size_factor;
+      if (this.size_factor === 1) {
+        this.y_vel = -70;
+      }
       this.body_y_acc = 0;
       this.jumping = true;
       if (this.x_vel !== 0) {
         this.x_vel = (Math.abs(this.x_vel) / this.x_vel) * 5;
       }
       this.x_acc = (Math.abs(this.x_acc) / this.x_acc) * 3;
-      this.jump_count++;
     }
     this.flag = 0;
   }
@@ -494,6 +542,12 @@ export default class Player {
           this.stopY();
         }
       }
+    } else if (this.level_id === 3) {
+      if (this.chosen_layout === layout) {
+        this.level.toggle_jump_eye(true);
+      } else {
+        this.level.toggle_jump_eye(false);
+      }
     }
   }
 
@@ -515,6 +569,12 @@ export default class Player {
           this.stopY();
         }
       }
+    } else if (this.level_id === 3) {
+      if (this.chosen_layout === layout) {
+        this.level.toggle_pound_eye(true);
+      } else {
+        this.level.toggle_pound_eye(false);
+      }
     }
   }
 
@@ -535,6 +595,12 @@ export default class Player {
         if (this.x_vel !== 0) {
           this.stopX();
         }
+      }
+    } else if (this.level_id === 3) {
+      if (this.chosen_layout === layout) {
+        this.level.toggle_right_eye(true);
+      } else {
+        this.level.toggle_right_eye(false);
       }
     }
   }

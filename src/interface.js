@@ -39,4 +39,7 @@ export default class Interface {
   update(dt) {
     return;
   }
+  set_score(num) {
+    this.text = "Money: $ " + num;
+  }
 }

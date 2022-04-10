@@ -20,6 +20,14 @@ export default class Game {
     }
   }
 
+  toggle_layout() {
+    if (this.chosen_layout === 0) {
+      this.chosen_layout = 1;
+    } else {
+      this.chosen_layout = 0;
+    }
+  }
+
   start() {
     this.level = new Levels(this, this.current_level);
     this.level.start();
